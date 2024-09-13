@@ -7,3 +7,4 @@ homepage = "https://github.com/jo-makar/miner-btc"
 repository = "https://github.com/jo-makar/miner-btc"
 
 [dependencies]
+lazy_static = "1.5.0"

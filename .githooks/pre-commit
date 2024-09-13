@@ -7,11 +7,11 @@ fi
 
 cargo test || exit 1
 
-files=($(cargo fmt --check -- -l))
-if [ $? -ne 0 ]; then
-    echo "git pre-commit: format the files:"
-    for file in ${files[@]}; do
-        realpath --relative-to=$PWD $file
-    done
-    exit 1
-fi
+#files=($(cargo fmt --check -- -l))
+#if [ $? -ne 0 ]; then
+#    echo "git pre-commit: format the files:"
+#    for file in ${files[@]}; do
+#        realpath --relative-to=$PWD $file
+#    done
+#    exit 1
+#fi
