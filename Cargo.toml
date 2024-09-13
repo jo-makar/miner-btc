@@ -1,0 +1,9 @@
+[package]
+name = "miner-btc"
+version = "0.1.0"
+authors = ["J. O. Makar <jomakar@gmail.com>"]
+edition = "2021"
+homepage = "https://github.com/jo-makar/miner-btc"
+repository = "https://github.com/jo-makar/miner-btc"
+
+[dependencies]

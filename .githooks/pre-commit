@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if cargo clippy 2>&1 | tee /dev/stderr | grep -q ^warning; then
+    echo "git pre-commit: fix clippy warnings"
+    exit 1
+fi
+
+cargo test || exit 1
+
+files=($(cargo fmt --check -- -l))
+if [ $? -ne 0 ]; then
+    echo "git pre-commit: format the files:"
+    for file in ${files[@]}; do
+        realpath --relative-to=$PWD $file
+    done
+    exit 1
+fi
