@@ -192,10 +192,11 @@ lazy_static! {
             "[2a05:d01c:392:c900:78ea:ba95:334c:1d7c]:18333",
         ];
 
-        nodes.iter()
-             .map(|n| n.parse().unwrap())
-             .collect::<Vec<SocketAddr>>()
-             .as_slice()
-             .into()
+        nodes
+            .iter()
+            .map(|n| n.parse().unwrap())
+            .collect::<Vec<SocketAddr>>()
+            .as_slice()
+            .into()
     };
 }

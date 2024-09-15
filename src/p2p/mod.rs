@@ -30,9 +30,7 @@ impl SeedNodes {
     fn new(seeds: &[&str], fixed_nodes: &[SocketAddr], port: u16) -> SeedNodes {
         SeedNodes {
             seeds: {
-                let mut v: Vec<String> = seeds.iter()
-                                              .map(|&s| String::from(s))
-                                              .collect();
+                let mut v: Vec<String> = seeds.iter().map(|&s| String::from(s)).collect();
                 shuffle(&mut v);
                 v
             },
@@ -70,7 +68,7 @@ impl Iterator for SeedNodes {
                         if !self.seed_nodes.is_empty() {
                             return self.seed_nodes.pop();
                         }
-                    },
+                    }
                     Err(err) => log::error!("failed to resolve {}: {}", seed, err),
                 }
             }
@@ -98,7 +96,7 @@ fn shuffle<T>(v: &mut Vec<T>) {
     let mut rng = rand::thread_rng();
 
     let n = v.len();
-    for i in 0..(n-1) {
+    for i in 0..(n - 1) {
         let j = rng.gen_range(i..n);
         v.swap(i, j);
     }

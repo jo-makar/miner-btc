@@ -1051,10 +1051,11 @@ lazy_static! {
             "[2c0f:fb18:402:5::3]:8333",
         ];
 
-        nodes.iter()
-             .map(|n| n.parse().unwrap())
-             .collect::<Vec<SocketAddr>>()
-             .as_slice()
-             .into()
+        nodes
+            .iter()
+            .map(|n| n.parse().unwrap())
+            .collect::<Vec<SocketAddr>>()
+            .as_slice()
+            .into()
     };
 }
