@@ -1,8 +1,11 @@
+use std::io;
 use std::io::Write;
 
+mod net;
 mod p2p;
 
-fn main() {
+#[tokio::main]
+async fn main() -> io::Result<()> {
     env_logger::Builder::new()
         .format(|buf, record| {
             writeln!(
@@ -16,15 +19,26 @@ fn main() {
         .filter(None, log::LevelFilter::Info)
         .init();
 
-    // FIXME STOPPED Command line flag to specify mainnet / testnet
-    let nodes = if true {
+    let matches = clap::command!()
+        .arg(clap::arg!(-m - -mainnet))
+        .arg(clap::arg!(-t - -testnet))
+        .group(
+            clap::ArgGroup::new("network")
+                .required(true)
+                .args(["mainnet", "testnet"]),
+        )
+        // FIXME Positional argument for reward address which should be validated
+        .get_matches();
+
+    let nodes = if matches.get_flag("mainnet") {
+        log::info!("connecting to mainnet");
         p2p::mainnet_nodes()
     } else {
+        log::info!("connecting to testnet");
         p2p::testnet_nodes()
     };
-    let mut node_count = 0;
-    for _ in nodes {
-        node_count += 1;
-    }
-    log::info!("{} nodes found", node_count);
+
+    tokio::spawn(net::net_mgr_task(nodes)).await?;
+
+    Ok(())
 }

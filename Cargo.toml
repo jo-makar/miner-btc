@@ -8,7 +8,9 @@ repository = "https://github.com/jo-makar/miner-btc"
 
 [dependencies]
 chrono = "0.4.38"
+clap = { version = "4.5.17", features = [ "cargo", "string" ] }
 env_logger = "0.11.5"
 lazy_static = "1.5.0"
 log = "0.4.22"
 rand = "0.8.5"
+tokio = { version = "1.42.0", features = ["full"] }
