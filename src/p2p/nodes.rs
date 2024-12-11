@@ -6,15 +6,72 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use super::mainnet;
 use super::testnet;
 
-pub fn mainnet_nodes() -> SeedNodes {
-    // FIXME STOPPED This should include (locally-cached) nodes
-    //               Perhaps as struct Nodes { known_nodes: HashSet<SocketAddr>, relayed_nodes: HashSet<SocketAddr>, seed_nodes: SeedNodes }
-    SeedNodes::new(mainnet::SEEDS, &mainnet::FIXED_NODES, 8333)
+pub fn mainnet_nodes() -> Nodes {
+    Nodes::new(
+        "mainnet.json".to_string(),
+        SeedNodes::new(mainnet::SEEDS, &mainnet::FIXED_NODES, 8333),
+    )
 }
 
-pub fn testnet_nodes() -> SeedNodes {
-    // FIXME This should include (locally-cached) known nodes
-    SeedNodes::new(testnet::SEEDS, &testnet::FIXED_NODES, 18333)
+pub fn testnet_nodes() -> Nodes {
+    Nodes::new(
+        "testnet.json".to_string(),
+        SeedNodes::new(testnet::SEEDS, &testnet::FIXED_NODES, 18333),
+    )
+}
+
+pub struct Nodes {
+    _path: String, // FIXME Temp name
+    known_nodes: Vec<SocketAddr>,
+    relayed_nodes: Vec<SocketAddr>,
+    seed_nodes: SeedNodes,
+    seen_nodes: HashSet<SocketAddr>,
+    _tested_known_nodes: Vec<SocketAddr>, // FIXME Temp name
+}
+
+impl Nodes {
+    fn new(path: String, seed_nodes: SeedNodes) -> Nodes {
+        // FIXME STOPPED Populate {known,relayed}_nodes from persisted json stored at path
+
+        Nodes {
+            _path: path,
+            known_nodes: Vec::new(),
+            relayed_nodes: Vec::new(),
+            seed_nodes,
+            seen_nodes: HashSet::new(),
+            _tested_known_nodes: Vec::new(),
+        }
+    }
+
+    // FIXME STOPPED Add Drop behavior to persist json at path (or use an explicit method?)
+    // FIXME Add a method to add to relayed_nodes
+    // FIXME Add a method to add to tested_known_nodes
+}
+
+impl Iterator for Nodes {
+    type Item = SocketAddr;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut next_addr = || -> Option<Self::Item> {
+            if !self.known_nodes.is_empty() {
+                return self.known_nodes.pop();
+            }
+
+            if !self.relayed_nodes.is_empty() {
+                return self.relayed_nodes.pop();
+            }
+
+            self.seed_nodes.next()
+        };
+
+        while let Some(node) = next_addr() {
+            if self.seen_nodes.insert(node) {
+                return Some(node);
+            }
+        }
+
+        None
+    }
 }
 
 pub struct SeedNodes {
