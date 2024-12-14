@@ -1,6 +1,9 @@
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 use std::collections::HashSet;
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
 use std::net::{SocketAddr, ToSocketAddrs};
 
 use super::mainnet;
@@ -21,31 +24,90 @@ pub fn testnet_nodes() -> Nodes {
 }
 
 pub struct Nodes {
-    _path: String, // FIXME Temp name
+    path: String,
     known_nodes: Vec<SocketAddr>,
     relayed_nodes: Vec<SocketAddr>,
     seed_nodes: SeedNodes,
     seen_nodes: HashSet<SocketAddr>,
-    _tested_known_nodes: Vec<SocketAddr>, // FIXME Temp name
+    tested_known_nodes: HashSet<SocketAddr>,
+}
+#[derive(Deserialize, Serialize)]
+struct PersistedNodes {
+    known_nodes: Vec<SocketAddr>,
+    relayed_nodes: Vec<SocketAddr>,
 }
 
 impl Nodes {
     fn new(path: String, seed_nodes: SeedNodes) -> Nodes {
-        // FIXME STOPPED Populate {known,relayed}_nodes from persisted json stored at path
+        fn deserialize(path: &String) -> (Vec<SocketAddr>, Vec<SocketAddr>) {
+            let file: File = match File::open(path) {
+                Ok(file) => file,
+                Err(err) => {
+                    log::warn!("error reading {}: {}", path, err);
+                    return (Vec::new(), Vec::new());
+                }
+            };
 
+            let nodes: PersistedNodes = match serde_json::from_reader(BufReader::new(file)) {
+                Ok(nodes) => nodes,
+                Err(err) => {
+                    log::warn!("error deserializing {}: {}", path, err);
+                    return (Vec::new(), Vec::new());
+                }
+            };
+
+            (nodes.known_nodes, nodes.relayed_nodes)
+        }
+
+        let (known_nodes, relayed_nodes) = deserialize(&path);
         Nodes {
-            _path: path,
-            known_nodes: Vec::new(),
-            relayed_nodes: Vec::new(),
+            path,
+            known_nodes,
+            relayed_nodes,
             seed_nodes,
             seen_nodes: HashSet::new(),
-            _tested_known_nodes: Vec::new(),
+            tested_known_nodes: HashSet::new(),
         }
     }
 
-    // FIXME STOPPED Add Drop behavior to persist json at path (or use an explicit method?)
-    // FIXME Add a method to add to relayed_nodes
-    // FIXME Add a method to add to tested_known_nodes
+    // FIXME Temp name
+    pub fn _add_relayed_nodes(&mut self, nodes: Vec<SocketAddr>) {
+        self.relayed_nodes.extend(nodes);
+    }
+
+    // FIXME Temp name
+    pub fn _add_known_node(&mut self, node: SocketAddr) {
+        self.tested_known_nodes.insert(node);
+    }
+}
+
+impl Drop for Nodes {
+    fn drop(&mut self) {
+        let file: File = match File::create(&self.path) {
+            Ok(file) => file,
+            Err(err) => {
+                log::warn!("error writing {}: {}", self.path, err);
+                return;
+            }
+        };
+
+        if let Err(err) = serde_json::to_writer_pretty(
+            BufWriter::new(file),
+            &PersistedNodes {
+                known_nodes: self
+                    .tested_known_nodes
+                    .clone()
+                    .into_iter()
+                    .chain(self.known_nodes.clone())
+                    .collect::<HashSet<SocketAddr>>() // Remove duplicates
+                    .into_iter()
+                    .collect::<Vec<SocketAddr>>(),
+                relayed_nodes: self.relayed_nodes.clone(),
+            },
+        ) {
+            log::warn!("error serializing {}: {}", self.path, err);
+        }
+    }
 }
 
 impl Iterator for Nodes {
