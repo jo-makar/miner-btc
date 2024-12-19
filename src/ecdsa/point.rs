@@ -3,6 +3,8 @@ use lazy_static::lazy_static;
 use num_bigint::{BigInt, Sign};
 use num_integer::Integer;
 
+use std::ops::Neg;
+
 #[derive(Eq, PartialEq)]
 pub struct Point<'a> {
     x: BigInt,
@@ -62,15 +64,14 @@ impl<'a> Point<'a> {
         self.at_pof
     }
 
-    // FIXME Temp name
-    fn _on_curve(&self) -> bool {
+    fn on_curve(&self) -> bool {
         if self.at_pof {
             return false;
         }
 
-        let lhs = _modpow(&self.y, &BigInt::from(2), &self.curve.p);
+        let lhs = modpow(&self.y, &BigInt::from(2), &self.curve.p);
 
-        let mut rhs = _modpow(&self.x, &BigInt::from(3), &self.curve.p);
+        let mut rhs = modpow(&self.x, &BigInt::from(3), &self.curve.p);
         rhs += &self.curve.a * &self.x;
         rhs += &self.curve.b;
 
@@ -95,13 +96,35 @@ impl<'a> Point<'a> {
     }
 }
 
-// FIXME STOPPED Add point operations (negate, add, double, multiply)
+impl<'a> Neg for &Point<'a> {
+    type Output = Point<'a>;
+
+    fn neg(self) -> Self::Output {
+        if self.at_pof {
+            panic!("negate point at infinity");
+        }
+
+        let p = Point {
+            x: self.x.clone(),
+            y: -&self.y,
+            at_pof: false,
+            curve: self.curve,
+        };
+
+        if !p.on_curve() {
+            panic!("negated point not on curve");
+        }
+
+        p
+    }
+}
+
+// FIXME STOPPED Add point operations (add, double, multiply)
 
 // The num_bigint::BigInt *pow methods use something like mod_floor not like %,
 // which has different behavior if the base or modulus is a negative value.
 
-// FIXME Temp name
-fn _modpow(base: &BigInt, power: &BigInt, modulus: &BigInt) -> BigInt {
+fn modpow(base: &BigInt, power: &BigInt, modulus: &BigInt) -> BigInt {
     let x = base.clone();
     x.modpow(power, modulus);
 
