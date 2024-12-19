@@ -1,8 +1,8 @@
 use std::io;
 use std::io::Write;
 
-mod net;
-mod p2p;
+use miner_btc::net;
+use miner_btc::p2p;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
@@ -27,7 +27,7 @@ async fn main() -> io::Result<()> {
                 .required(true)
                 .args(["mainnet", "testnet"]),
         )
-        // FIXME Positional argument for reward address which should be validated
+        // FIXME STOPPED Positional argument for reward address which should be validated
         .get_matches();
 
     let nodes = if matches.get_flag("mainnet") {

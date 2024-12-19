@@ -211,7 +211,7 @@ impl Iterator for SeedNodes {
     }
 }
 
-fn shuffle<T>(v: &mut Vec<T>) {
+fn shuffle<T>(v: &mut [T]) {
     let mut rng = rand::thread_rng();
 
     let n = v.len();
