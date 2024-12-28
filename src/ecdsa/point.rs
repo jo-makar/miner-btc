@@ -1,11 +1,10 @@
 use lazy_static::lazy_static;
 
 use num_bigint::{BigInt, Sign};
-use num_integer::Integer;
 
-use std::ops::Neg;
+use std::ops::{Add, AddAssign, Mul, Neg};
 
-#[derive(Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Point<'a> {
     x: BigInt,
     y: BigInt,
@@ -69,17 +68,15 @@ impl<'a> Point<'a> {
             return false;
         }
 
-        let lhs = modpow(&self.y, &BigInt::from(2), &self.curve.p);
-
-        let mut rhs = modpow(&self.x, &BigInt::from(3), &self.curve.p);
-        rhs += &self.curve.a * &self.x;
-        rhs += &self.curve.b;
+        let lhs = self.y.modpow(&BigInt::from(2), &self.curve.p);
+        let rhs = self.x.modpow(&BigInt::from(3), &self.curve.p)
+            + (&self.curve.a * &self.x)
+            + &self.curve.b;
 
         lhs == rhs
     }
 
-    // FIXME Temp name
-    fn _is_negation(&self, q: &Point) -> bool {
+    fn is_negation(&self, q: &Point) -> bool {
         if self.curve != q.curve {
             panic!("points not on same curve")
         }
@@ -93,6 +90,38 @@ impl<'a> Point<'a> {
             (Sign::Plus, Sign::Minus) => self.y == -&q.y,
             _ => false,
         }
+    }
+
+    fn double(&self) -> Point<'a> {
+        if self.at_pof {
+            return Point {
+                x: BigInt::from(0),
+                y: BigInt::from(0),
+                at_pof: true,
+                curve: self.curve,
+            };
+        }
+
+        let lambda = ((self.x.modpow(&BigInt::from(2), &self.curve.p) * BigInt::from(3)
+            + &self.curve.a)
+            * (&BigInt::from(2) * &self.y).modinv(&self.curve.p).unwrap())
+            % &self.curve.p;
+        let x =
+            (lambda.modpow(&BigInt::from(2), &self.curve.p) - &self.x - &self.x) % &self.curve.p;
+        let y = (&lambda * (&self.x - &x) - &self.y) % &self.curve.p;
+
+        let p = Point {
+            x,
+            y,
+            at_pof: false,
+            curve: self.curve,
+        };
+
+        if !p.on_curve() {
+            panic!("doubled point not on curve");
+        }
+
+        p
     }
 }
 
@@ -119,18 +148,126 @@ impl<'a> Neg for &Point<'a> {
     }
 }
 
-// FIXME STOPPED Add point operations (add, double, multiply)
+impl<'a> Add<&Point<'_>> for &Point<'a> {
+    type Output = Point<'a>;
 
-// The num_bigint::BigInt *pow methods use something like mod_floor not like %,
-// which has different behavior if the base or modulus is a negative value.
+    fn add(self, other: &Point) -> Self::Output {
+        if self.curve != other.curve {
+            panic!("points not on same curve");
+        }
 
-fn modpow(base: &BigInt, power: &BigInt, modulus: &BigInt) -> BigInt {
-    let x = base.clone();
-    x.modpow(power, modulus);
+        if self.at_pof && other.at_pof {
+            return Point {
+                x: BigInt::from(0),
+                y: BigInt::from(0),
+                at_pof: true,
+                curve: self.curve,
+            };
+        } else if self.at_pof && !other.at_pof {
+            return Point {
+                x: other.x.clone(),
+                y: other.y.clone(),
+                at_pof: false,
+                curve: self.curve,
+            };
+        } else if !self.at_pof && other.at_pof {
+            return Point {
+                x: self.x.clone(),
+                y: self.y.clone(),
+                at_pof: false,
+                curve: self.curve,
+            };
+        }
 
-    if base.sign() == Sign::Minus && power.is_odd() {
-        x - modulus
-    } else {
-        x
+        if self == other {
+            return self.double();
+        }
+
+        if self.is_negation(other) {
+            return Point {
+                x: BigInt::from(0),
+                y: BigInt::from(0),
+                at_pof: true,
+                curve: self.curve,
+            };
+        }
+
+        if self.x == other.x {
+            panic!("points with same x but not negations");
+        }
+
+        let lambda = ((&other.x - &self.x).modinv(&self.curve.p).unwrap() * (&other.y - &self.y))
+            % &self.curve.p;
+        let x =
+            (lambda.modpow(&BigInt::from(2), &self.curve.p) - &self.x - &other.x) % &self.curve.p;
+        let y = ((&lambda * (&other.x - &x)) - &other.y) % &self.curve.p;
+
+        let p = Point {
+            x,
+            y,
+            at_pof: false,
+            curve: self.curve,
+        };
+
+        if !p.on_curve() {
+            panic!("added point not on curve");
+        }
+
+        p
     }
 }
+
+impl<'a> AddAssign<&Point<'a>> for Point<'a> {
+    fn add_assign(&mut self, other: &Point<'a>) {
+        // Dereference then rereference to convert from a mutable to an immutable reference
+        let sum = &*self + other;
+        self.x = sum.x;
+        self.y = sum.y;
+        self.at_pof = sum.at_pof;
+    }
+}
+
+impl<'a> Mul<&BigInt> for &Point<'a> {
+    type Output = Point<'a>;
+
+    fn mul(self, other: &BigInt) -> Self::Output {
+        if self.at_pof || *other == BigInt::ZERO {
+            return Point {
+                x: BigInt::from(0),
+                y: BigInt::from(0),
+                at_pof: true,
+                curve: self.curve,
+            };
+        }
+
+        // To compute $sP$ decompose $s$ into its binary representation:
+        //   $s = s_0 + 2s_1 + 2^2s_2 + ... + 2^(n-1)s_(n-1)$
+        //   where $s_0, ..., s_(n-1) \in {0,1}, n = \lceil log_2 s \rceil$
+
+        let mut rv = Point {
+            x: BigInt::from(0),
+            y: BigInt::from(0),
+            at_pof: true,
+            curve: self.curve,
+        };
+        let mut p = self.clone();
+
+        let (_, bytes) = other.to_bytes_le();
+        for byte in bytes {
+            for bit in 0..8 {
+                if byte & (1 << bit) != 0 {
+                    rv += &p;
+                }
+                p = p.double();
+            }
+        }
+
+        if !rv.on_curve() {
+            panic!("multiplied point not on curve");
+        }
+
+        rv
+    }
+}
+
+// FIXME STOPPED Write tests

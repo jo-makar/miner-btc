@@ -52,7 +52,13 @@
 //! $\lambda = ((3 * x_p^2 + a) * modinv(2 * y_p, p)) % p$  
 //!
 //! ## Point multiplication
-//! If $P$ is added to $P$ the result is $2P$, similarly $2P + P$ is $3P$, ...
+//!
+//! $nP = P + P + P + ... + P$
+//!
+//! If $n$ is negative:  
+//! $(-n)P = (-P) + (-P) + (-P) + ... (-P)$
+//!
+//! If $n$ is zero then $nP$ is the point at infinity.
 //!
 //! ## Trap door function
 //! Given $R = kP$ where $R$ and $P$ are known, $k$ cannot be determined.  
