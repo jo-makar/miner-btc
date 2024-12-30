@@ -56,7 +56,7 @@
 //! $nP = P + P + P + ... + P$
 //!
 //! If $n$ is negative:  
-//! $(-n)P = (-P) + (-P) + (-P) + ... (-P)$
+//! $(-n)P = (-P) + (-P) + (-P) + ... + (-P)$
 //!
 //! If $n$ is zero then $nP$ is the point at infinity.
 //!

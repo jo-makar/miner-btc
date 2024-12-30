@@ -49,6 +49,9 @@ lazy_static! {
     };
 }
 
+// The BigInt.mod* methods round like mod_floor, ie given a modulus>0 the range is [0, modulus),
+// which is unlike % whose range is (-modulus, modulus) depending on the dividend sign.
+
 impl<'a> Point<'a> {
     pub fn new(x: BigInt, y: BigInt, curve: &'a Curve) -> Point<'a> {
         Point {
@@ -69,9 +72,14 @@ impl<'a> Point<'a> {
         }
 
         let lhs = self.y.modpow(&BigInt::from(2), &self.curve.p);
-        let rhs = self.x.modpow(&BigInt::from(3), &self.curve.p)
+
+        let mut rhs = (self.x.modpow(&BigInt::from(3), &self.curve.p)
             + (&self.curve.a * &self.x)
-            + &self.curve.b;
+            + &self.curve.b)
+            % &self.curve.p;
+        if rhs < BigInt::ZERO {
+            rhs += &self.curve.p;
+        }
 
         lhs == rhs
     }
@@ -270,4 +278,137 @@ impl<'a> Mul<&BigInt> for &Point<'a> {
     }
 }
 
-// FIXME STOPPED Write tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::panic::catch_unwind;
+
+    #[test]
+    fn curve_validate() {
+        for curve in vec![&SECP256K1_CURVE] {
+            assert!(curve.n < curve.p);
+
+            // Verify $(4a^3 + 27b^2) % p \neq 0$
+            assert_ne!(
+                ((BigInt::from(4) * curve.a.modpow(&BigInt::from(3), &curve.p))
+                    + (BigInt::from(27) * curve.b.modpow(&BigInt::from(2), &curve.p)))
+                    % &curve.p,
+                BigInt::ZERO
+            );
+
+            let g = Point {
+                x: curve.gx.clone(),
+                y: curve.gy.clone(),
+                at_pof: false,
+                curve,
+            };
+            assert!(g.on_curve());
+
+            let panic = catch_unwind(|| &g * &curve.n);
+            assert_eq!(
+                panic.err().unwrap().downcast_ref::<&str>().unwrap(),
+                &"multiplied point not on curve"
+            );
+        }
+    }
+
+    lazy_static! {
+        static ref CURVE: Curve = Curve {
+            p: BigInt::from(7),
+            a: BigInt::from(3),
+            b: BigInt::from(4),
+            // Unused fields
+            gx: BigInt::ZERO,
+            gy: BigInt::ZERO,
+            n: BigInt::ZERO
+        };
+    }
+
+    #[test]
+    fn point_add() {
+        let p = Point {
+            x: BigInt::from(1),
+            y: BigInt::from(1),
+            at_pof: false,
+            curve: &CURVE,
+        };
+        assert!(p.on_curve());
+
+        let q = Point {
+            x: BigInt::from(2),
+            y: BigInt::from(5),
+            at_pof: false,
+            curve: &CURVE,
+        };
+        assert!(q.on_curve());
+
+        let r = &p + &q;
+        assert!(r.on_curve());
+        assert!(r.x == BigInt::from(-1) || r.x == BigInt::from(6));
+        assert_eq!(r.y, BigInt::from(0));
+    }
+
+    #[test]
+    fn point_add_negation() {
+        let p = Point {
+            x: BigInt::from(1),
+            y: BigInt::from(1),
+            at_pof: false,
+            curve: &CURVE,
+        };
+        assert!(p.on_curve());
+
+        let q = -&p;
+        assert!(q.on_curve());
+
+        assert!((&p + &q).at_pof);
+    }
+
+    #[test]
+    fn point_double() {
+        let p = Point {
+            x: BigInt::from(2),
+            y: BigInt::from(2),
+            at_pof: false,
+            curve: &CURVE,
+        };
+        assert!(p.on_curve());
+
+        let q = p.double();
+        assert!(q.on_curve());
+        assert_eq!(q.x, BigInt::ZERO);
+        assert_eq!(q.y, BigInt::from(2));
+
+        let q = &p + &p;
+        assert!(q.on_curve());
+        assert_eq!(q.x, BigInt::ZERO);
+        assert_eq!(q.y, BigInt::from(2));
+    }
+
+    #[test]
+    fn point_mul() {
+        let curve = &Curve {
+            p: BigInt::from(17),
+            a: BigInt::from(0),
+            b: BigInt::from(7),
+            // Unused fields
+            gx: BigInt::ZERO,
+            gy: BigInt::ZERO,
+            n: BigInt::ZERO,
+        };
+
+        let p = Point {
+            x: BigInt::from(15),
+            y: BigInt::from(13),
+            at_pof: false,
+            curve,
+        };
+        assert!(p.on_curve());
+
+        let q = &p * &BigInt::from(6);
+        assert!(q.on_curve());
+        assert_eq!(q.x, BigInt::from(5));
+        assert!(q.y == BigInt::from(8) || q.y == BigInt::from(-9));
+    }
+}
