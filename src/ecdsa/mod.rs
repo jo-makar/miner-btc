@@ -64,6 +64,8 @@
 //! Given $R = kP$ where $R$ and $P$ are known, $k$ cannot be determined.  
 //! This is the basis for ECDSA use in public-key cryptography, ie $pubkey = privkey * G$
 
+mod key;
 mod point;
 
+pub use key::{PrivKey, PubKey};
 pub use point::{Curve, Point};

@@ -28,6 +28,7 @@ async fn main() -> io::Result<()> {
                 .args(["mainnet", "testnet"]),
         )
         // FIXME STOPPED Positional argument for reward address which should be validated
+        // FIXME Optional argument for socks proxy support
         .get_matches();
 
     let nodes = if matches.get_flag("mainnet") {

@@ -19,7 +19,7 @@ pub struct Curve {
     b: BigInt,
     gx: BigInt, // Generator point on the curve
     gy: BigInt,
-    n: BigInt, // Number of possible points on the curve
+    n: BigInt, // Number of possible points on the curve (also called its order)
 }
 
 lazy_static! {
@@ -62,11 +62,23 @@ impl<'a> Point<'a> {
         }
     }
 
+    pub fn x(&self) -> &BigInt {
+        &self.x
+    }
+
+    pub fn y(&self) -> &BigInt {
+        &self.y
+    }
+
+    pub fn curve(&self) -> &Curve {
+        self.curve
+    }
+
     pub fn at_pof(&self) -> bool {
         self.at_pof
     }
 
-    fn on_curve(&self) -> bool {
+    pub fn on_curve(&self) -> bool {
         if self.at_pof {
             return false;
         }
@@ -275,6 +287,25 @@ impl<'a> Mul<&BigInt> for &Point<'a> {
         }
 
         rv
+    }
+}
+
+impl Curve {
+    pub fn order(&self) -> &BigInt {
+        &self.n
+    }
+
+    pub fn modulo(&self) -> &BigInt {
+        &self.p
+    }
+
+    pub fn generator(&self) -> Point {
+        Point {
+            x: self.gx.clone(),
+            y: self.gy.clone(),
+            at_pof: false,
+            curve: self,
+        }
     }
 }
 
