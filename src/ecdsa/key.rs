@@ -16,20 +16,21 @@ pub struct PubKey<'a> {
 }
 
 impl<'a> PrivKey<'a> {
-    pub fn new(d: BigInt, curve: &'a Curve) -> PrivKey<'a> {
+    pub fn new(d: BigInt, curve: &'a Curve) -> (PrivKey<'a>, PubKey<'a>) {
         if d < BigInt::from(1) || *curve.order() <= d {
             panic!("invalid private key");
         }
         let privkey = PrivKey { d, curve };
 
-        if !privkey.pubkey().on_curve() {
+        let pubkey = privkey.pubkey();
+        if !pubkey.on_curve() {
             panic!("pubkey not on curve");
         }
 
-        privkey
+        (privkey, pubkey)
     }
 
-    pub fn new_bitcoin(privkey: &[u8]) -> PrivKey<'a> {
+    pub fn new_bitcoin(privkey: &[u8]) -> (PrivKey<'a>, PubKey<'a>) {
         let curve = &SECP256K1_CURVE;
         let d = match BigUint::parse_bytes(privkey, 16) {
             Some(d) => BigInt::from_biguint(Sign::Plus, d),
@@ -40,14 +41,15 @@ impl<'a> PrivKey<'a> {
         }
         let privkey = PrivKey { d, curve };
 
-        if !privkey.pubkey().on_curve() {
+        let pubkey = privkey.pubkey();
+        if !pubkey.on_curve() {
             panic!("pubkey not on curve");
         }
 
-        privkey
+        (privkey, pubkey)
     }
 
-    pub fn rand_bitcoin() -> PrivKey<'a> {
+    pub fn rand_bitcoin() -> (PrivKey<'a>, PubKey<'a>) {
         let curve = &SECP256K1_CURVE;
         let privkey = PrivKey {
             d: {
@@ -57,11 +59,12 @@ impl<'a> PrivKey<'a> {
             curve,
         };
 
-        if !privkey.pubkey().on_curve() {
+        let pubkey = privkey.pubkey();
+        if !pubkey.on_curve() {
             panic!("pubkey not on curve");
         }
 
-        privkey
+        (privkey, pubkey)
     }
 
     pub fn pubkey(&self) -> PubKey<'a> {
@@ -222,8 +225,7 @@ mod tests {
         ];
 
         for (privkey, addr) in table.iter() {
-            let privkey = PrivKey::new_bitcoin(privkey.as_bytes());
-            let pubkey = privkey.pubkey();
+            let (_, pubkey) = PrivKey::new_bitcoin(privkey.as_bytes());
             assert_eq!(pubkey.base58_addr(true), addr.to_string());
         }
     }

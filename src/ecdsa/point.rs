@@ -112,7 +112,7 @@ impl<'a> Point<'a> {
         }
     }
 
-    fn double(&self) -> Point<'a> {
+    fn double(&self, check_on_curve: bool) -> Point<'a> {
         if self.at_pof {
             return Point {
                 x: BigInt::from(0),
@@ -137,7 +137,7 @@ impl<'a> Point<'a> {
             curve: self.curve,
         };
 
-        if !p.on_curve() {
+        if check_on_curve && !p.on_curve() {
             panic!("doubled point not on curve");
         }
 
@@ -200,7 +200,7 @@ impl<'a> Add<&Point<'_>> for &Point<'a> {
         }
 
         if self == other {
-            return self.double();
+            return self.double(true);
         }
 
         if self.is_negation(other) {
@@ -278,7 +278,7 @@ impl<'a> Mul<&BigInt> for &Point<'a> {
                 if byte & (1 << bit) != 0 {
                     rv += &p;
                 }
-                p = p.double();
+                p = p.double(false);
             }
         }
 
@@ -406,7 +406,7 @@ mod tests {
         };
         assert!(p.on_curve());
 
-        let q = p.double();
+        let q = p.double(false);
         assert!(q.on_curve());
         assert_eq!(q.x, BigInt::ZERO);
         assert_eq!(q.y, BigInt::from(2));
