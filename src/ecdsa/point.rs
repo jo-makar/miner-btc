@@ -1,5 +1,4 @@
 use lazy_static::lazy_static;
-
 use num_bigint::{BigInt, Sign};
 
 use std::ops::{Add, AddAssign, Mul, Neg};

@@ -1,10 +1,12 @@
-use crate::ecdsa::{point::SECP256K1_CURVE, Curve, Point};
-
 use num_bigint::{BigInt, BigUint, RandBigInt, Sign};
 use num_integer::Integer;
 use num_traits::cast::ToPrimitive;
 use ripemd::{Digest, Ripemd160};
 use sha2::Sha256;
+
+use std::fmt;
+
+use crate::ecdsa::{point::SECP256K1_CURVE, Curve, Point};
 
 pub struct PrivKey<'a> {
     d: BigInt, // Private key
@@ -70,6 +72,12 @@ impl<'a> PrivKey<'a> {
     pub fn pubkey(&self) -> PubKey<'a> {
         let g = self.curve.generator();
         PubKey { e: &g * &self.d }
+    }
+}
+
+impl fmt::Display for PrivKey<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.d.to_str_radix(16))
     }
 }
 
