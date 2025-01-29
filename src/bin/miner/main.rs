@@ -28,7 +28,6 @@ async fn main() -> io::Result<()> {
                 .args(["mainnet", "testnet"]),
         )
         .arg(clap::arg!(<addr>).required(true))
-        // FIXME Optional argument for socks proxy support
         .get_matches();
 
     let addr = {
