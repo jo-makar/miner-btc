@@ -15,14 +15,13 @@ Experiments in Bitcoin mining
 - Install tsocks (eg `apt-get install tsocks`)
   - May need to install from source for proxied DNS lookup support, ref `tsocks(8)`
 - Configure tsocks 
-  - 
-    ```
-    $ mv /etc/tsocks.conf /etc/tsocks.conf.orig
-    $ cat <<EOF >/etc/tsocks.conf
-    server = 127.0.0.1
-    server_type = 5
-    server_port = 1080
-    EOF
-    ```
+  ```
+  $ mv /etc/tsocks.conf /etc/tsocks.conf.orig
+  $ cat <<EOF >/etc/tsocks.conf
+  server = 127.0.0.1
+  server_type = 5
+  server_port = 1080
+  EOF
+  ```
 - Launch the SOCKS5 proxy (eg `ssh -nNT -D 127.0.0.1:1080 <host>`)
 - `tsocks cargo run [--bin <binary>] [-- <arguments>]`
