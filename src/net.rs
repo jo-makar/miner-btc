@@ -1,6 +1,6 @@
 use crate::p2p::Nodes;
 
-pub async fn net_mgr_task(nodes: Nodes) {
+pub async fn net_mgr_task(/* FIXME Temp name */ _addr: String, nodes: Nodes) {
     // FIXME Define an async network manager task
     //       which launches network worker tasks and distributes SocketAddrs
     let mut node_count = 0;
