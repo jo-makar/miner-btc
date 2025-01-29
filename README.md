@@ -15,7 +15,8 @@ Experiments in Bitcoin mining
 - Install tsocks (eg `apt-get install tsocks`)
   - May need to install from source for proxied DNS lookup support, ref `tsocks(8)`
 - Configure tsocks 
-  - ```
+  - 
+    ```
     $ mv /etc/tsocks.conf /etc/tsocks.conf.orig
     $ cat <<EOF >/etc/tsocks.conf
     server = 127.0.0.1
