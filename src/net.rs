@@ -8,4 +8,7 @@ pub async fn net_mgr_task(/* FIXME Temp name */ _addr: String, nodes: Nodes) {
         node_count += 1;
     }
     log::info!("{} nodes found", node_count);
+
+    // FIXME Send ping if connection inactive for 30 minutes, with reasonble timeout for pong (not the default 20 mins)
+    // FIXME Respond appropriately to pings
 }

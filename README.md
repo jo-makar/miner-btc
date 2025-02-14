@@ -55,34 +55,38 @@ sequenceDiagram
   note over M,N2:miner-btc may launch new connections<br/>if new addresses reported and insufficiently connected
 ```
 
-<!-- FIXME STOPPED
-FIXME Not shown but will need to ping and expect pongs periodically
-      And of course response appropriately to pings
+### Execution
 
+```mermaid
 sequenceDiagram
   participant M as miner-btc
   participant N1 as node1
+  participant N2 as node2
+  participant N3 as node3
 
   loop
+    note over M,N3:mining execution not impacted by any of the following
     alt node broadcasts a transaction it originates
       N1->>M:tx
+      N1->>N2:tx
     else node relays a transaction
-      N1->>M:inv
-      M->>N1:getdata
-      N1->>M:tx
-    end
+      N3->>N2:tx
+      N2->>M:inv
+      M->>N2:getdata
+      N2->>M:tx
 
-    alt miner broadcasts newly-mined block
-      M->>N1:block
-    else node broadcasts newly-mined block
+      note over M,N3:mining execution stopped by any of the following
+    else node broadcast newly-mined block
       N1->>M:block
+      N1->>N2:block
     else node relays newly-mined block
-      N1->>M:inv (or headers)
-      M->>N1:getdata
-      N1->>M:block
+      N3->>N2:block
+      N2->>M:inv or headers
+      M->>N2:getdata
+      N2->>M:block
     end
   end
--->
+```
 
 References:
 - [Bitcoin > Developer Guides > P2P Network](https://developer.bitcoin.org/devguide/p2p_network.html)
