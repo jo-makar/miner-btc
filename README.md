@@ -23,9 +23,9 @@ sequenceDiagram
   rect rgb(191,223,255)
     note over M,N1: launched connection
     M->>N1:version
+    N1->>M:verack
     N1->>M:version
     M->>N1:verack
-    N1->>M:verack
     M->>N1:sendaddrv2
     M->>N1:getaddr
     N1->>M:addrv2 or addr
@@ -37,9 +37,9 @@ sequenceDiagram
   rect rgb(223,191,255)
     note over M,N2:unsolicited connection<br/>if additional connections can be supported<br/>otherwise the incoming connection is dropped
     N2->>M:version
+    M->>N2:verack
     M->>N2:version
     N2->>M:verack
-    M->>N2:verack
     M->>N2:sendaddrv2
     M->>N2:getaddr
     N2->>M:addrv2 or addr
@@ -107,3 +107,10 @@ References:
   ```
 - Launch the SOCKS5 proxy (eg `ssh -nNT -D 127.0.0.1:1080 <host>`)
 - `tsocks cargo run [--bin <binary>] [-- <arguments>]`
+
+## Experiments
+
+- SHA256 state manipulation / rewinding
+  - Ie store computation state and revert updates to try other nonces / transactions
+- Incorporate use of a SAT solver
+  - Ref: https://jheusser.github.io/2013/02/03/satcoin.html
